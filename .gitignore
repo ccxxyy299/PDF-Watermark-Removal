@@ -1,0 +1,28 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# Temp files
+debug_*.png
+temp_*.png
+test_*.png
+
+# Output files
+output_images/
+uploads/
+output_file.pdf
+
+# OS
+.DS_Store
+Thumbs.db
