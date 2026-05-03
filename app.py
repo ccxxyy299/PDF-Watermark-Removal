@@ -24,50 +24,28 @@ def remove_watermark(image_path, sensitivity=50):
     # 转换色彩空间
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     l_channel = lab[:, :, 0]
     s_channel = hsv[:, :, 1]
 
-    # ===== 策略1: 基于颜色的水印检测 =====
-    # 水印特征: 高亮度 (L=220-240) + 极低饱和度 (S≈0)
-    lower_l = 220 - sensitivity // 5
-    upper_l = 245 + sensitivity // 20
-    sat_max = 2 + sensitivity // 20
+    # ===== 基于颜色的水印检测 =====
+    # 水印特征: 高亮度 + 极低饱和度
+    lower_l = 205 - sensitivity // 5
+    upper_l = 250
+    sat_max = 5 + sensitivity // 20
 
-    color_mask = cv2.inRange(l_channel, lower_l, upper_l)
+    # 亮度掩码
+    brightness_mask = cv2.inRange(l_channel, lower_l, upper_l)
+    # 饱和度掩码（水印是灰色的）
     sat_mask = (s_channel < sat_max).astype(np.uint8) * 255
-    candidate_mask = cv2.bitwise_and(color_mask, sat_mask)
+    # 保护有颜色的内容
+    color_protection = (s_channel > 20).astype(np.uint8) * 255
 
-    # ===== 策略2: 连通区域分析 =====
-    kernel_close = np.ones((5, 5), np.uint8)
-    candidate_mask = cv2.morphologyEx(candidate_mask, cv2.MORPH_CLOSE, kernel_close)
+    # 组合：高亮度 + 低饱和度 + 非彩色内容
+    final_mask = cv2.bitwise_and(brightness_mask, sat_mask)
+    final_mask = cv2.bitwise_and(final_mask, cv2.bitwise_not(color_protection))
 
-    contours, _ = cv2.findContours(candidate_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    img_area = img.shape[0] * img.shape[1]
-    final_mask = np.zeros_like(gray)
-
-    # 灵敏度越高，最小面积越小
-    min_area = max(50, img_area * (0.00005 + (100 - sensitivity) * 0.00001))
-
-    for contour in contours:
-        area = cv2.contourArea(contour)
-        if area > min_area:
-            cv2.drawContours(final_mask, [contour], -1, 255, -1)
-
-    # ===== 策略3: 强边缘保护 =====
-    # 只保护强边缘（内容的边缘），弱边缘（水印）不保护
-    edges_strong = cv2.Canny(gray, 100, 250)
-    edge_kernel = np.ones((3, 3), np.uint8)
-    edge_protection = cv2.dilate(edges_strong, edge_kernel, iterations=2)
-    final_mask = cv2.bitwise_and(final_mask, cv2.bitwise_not(edge_protection))
-
-    # ===== 形态学清理 =====
-    kernel = np.ones((3, 3), np.uint8)
-    final_mask = cv2.morphologyEx(final_mask, cv2.MORPH_OPEN, kernel)
-
-    # 应用掩码
+    # ===== 应用掩码 =====
     img[final_mask == 255] = [255, 255, 255]
 
     cv2.imwrite(image_path, img)
