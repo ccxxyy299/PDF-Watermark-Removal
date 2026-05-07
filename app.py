@@ -2,10 +2,14 @@ from flask import Flask, render_template, request, send_file, jsonify
 import os
 import re
 import shutil
+import uuid
+import time
 import cv2
 import numpy as np
 import fitz
 from PIL import Image
+
+TASK_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tasks')
 
 CONVERT_DPI = 300
 
@@ -369,16 +373,23 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload():
+    _cleanup_old_tasks()
     uploaded_file = request.files['file']
     if uploaded_file.filename != '':
-        os.makedirs('uploads', exist_ok=True)
-        pdf_path = 'uploads/uploaded_file.pdf'
+        task_id = uuid.uuid4().hex
+        task_folder = os.path.join(TASK_DIR, task_id)
+        os.makedirs(task_folder, exist_ok=True)
+        pdf_path = os.path.join(task_folder, 'input.pdf')
         uploaded_file.save(pdf_path)
-        return jsonify({'status': 'ok', 'message': '文件上传成功'})
+        return jsonify({'status': 'ok', 'message': '文件上传成功', 'task_id': task_id})
 
 
 @app.route('/remove_watermark', methods=['GET', 'POST'])
 def remove_watermark_route():
+    task_id = request.args.get('task_id', '')
+    if not task_id or not os.path.isdir(os.path.join(TASK_DIR, task_id)):
+        return jsonify({'status': 'error', 'message': '无效的任务，请重新上传文件'})
+
     sensitivity = request.args.get('sensitivity', 50, type=int)
     sensitivity = max(1, min(100, sensitivity))
     mode = request.args.get('mode', 'auto')
@@ -386,22 +397,40 @@ def remove_watermark_route():
     if mode not in ('gray', 'color', 'dark', 'auto'):
         mode = 'auto'
 
-    pdf_path = 'uploads/uploaded_file.pdf'
+    task_folder = os.path.join(TASK_DIR, task_id)
+    pdf_path = os.path.join(task_folder, 'input.pdf')
     if not os.path.exists(pdf_path):
         return jsonify({'status': 'error', 'message': '请先上传PDF文件'})
 
-    output_pdf_path = 'output_file.pdf'
+    output_pdf_path = os.path.join(task_folder, 'output.pdf')
     remove_watermark_pipeline(pdf_path, output_pdf_path, sensitivity, mode)
     return jsonify({
         'status': 'ok',
-        'message': f'水印去除成功 (模式: {mode}, 灵敏度: {sensitivity})'
+        'message': f'水印去除成功 (模式: {mode}, 灵敏度: {sensitivity})',
+        'task_id': task_id
     })
 
 
 @app.route('/download')
 def download():
-    output_pdf_path = 'output_file.pdf'
-    return send_file(output_pdf_path, as_attachment=True)
+    task_id = request.args.get('task_id', '')
+    if not task_id:
+        return jsonify({'status': 'error', 'message': '缺少任务ID'})
+    output_path = os.path.join(TASK_DIR, task_id, 'output.pdf')
+    if not os.path.exists(output_path):
+        return jsonify({'status': 'error', 'message': '文件不存在'})
+    return send_file(output_path, as_attachment=True)
+
+
+def _cleanup_old_tasks(max_age_hours=1):
+    """清理超过指定时间的旧任务"""
+    if not os.path.isdir(TASK_DIR):
+        return
+    now = time.time()
+    for name in os.listdir(TASK_DIR):
+        path = os.path.join(TASK_DIR, name)
+        if os.path.isdir(path) and now - os.path.getmtime(path) > max_age_hours * 3600:
+            shutil.rmtree(path, ignore_errors=True)
 
 
 if __name__ == '__main__':

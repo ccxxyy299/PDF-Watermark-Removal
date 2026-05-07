@@ -220,7 +220,7 @@
 
         <p id="message"></p>
         <div id="download-link">
-            <a href="/download" download="output.pdf">
+            <a href="#" id="download-btn">
                 <button class="btn-success">下载处理后的PDF</button>
             </a>
         </div>
@@ -229,6 +229,7 @@
     <script>
         let selectedMode = 'auto';
         let fileSelected = false;
+        let taskId = null;
 
         // Mode buttons
         document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -293,19 +294,27 @@
             try {
                 const formData = new FormData();
                 formData.append('file', document.getElementById('file-input').files[0]);
-                await fetch('/upload', { method: 'POST', body: formData });
+                const uploadResp = await fetch('/upload', { method: 'POST', body: formData });
+                const uploadData = await uploadResp.json();
+                if (uploadData.status !== 'ok') {
+                    throw new Error(uploadData.message || '上传失败');
+                }
+                taskId = uploadData.task_id;
 
                 btn.textContent = '处理中...';
                 msg.textContent = '正在去除水印，请稍候...';
 
                 const sensitivity = document.getElementById('sensitivity').value;
-                const resp = await fetch(`/remove_watermark?sensitivity=${sensitivity}&mode=${selectedMode}`);
+                const resp = await fetch(`/remove_watermark?sensitivity=${sensitivity}&mode=${selectedMode}&task_id=${taskId}`);
                 const data = await resp.json();
 
                 if (data.status === 'ok') {
                     msg.className = 'show success';
                     msg.textContent = '水印去除成功！点击下方按钮下载。';
                     document.getElementById('download-link').classList.add('show');
+                    document.getElementById('download-btn').onclick = () => {
+                        window.location.href = '/download?task_id=' + taskId;
+                    };
                 } else {
                     msg.className = 'show error';
                     msg.textContent = data.message || '处理失败，请重试';
