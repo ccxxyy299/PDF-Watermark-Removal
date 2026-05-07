@@ -11,7 +11,7 @@ from PIL import Image
 
 TASK_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tasks')
 
-CONVERT_DPI = 150
+CONVERT_DPI = 300
 
 app = Flask(__name__)
 
