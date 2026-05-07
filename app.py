@@ -434,4 +434,4 @@ def _cleanup_old_tasks(max_age_hours=1):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)
