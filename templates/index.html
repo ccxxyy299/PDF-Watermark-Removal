@@ -1,138 +1,321 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF 去水印工具</title>
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
+            font-family: -apple-system, "Microsoft YaHei", sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
         }
-        #upload-section {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            align-items: center;
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
         }
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: #1a1a2e;
+        }
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+        .upload-area {
+            border: 2px dashed #c0c8d4;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s, background 0.3s;
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #4a90d9;
+            background: #f0f7ff;
+        }
+        .upload-area .icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        .upload-area p { color: #666; font-size: 14px; }
+        .upload-area .filename {
+            margin-top: 10px;
+            color: #4a90d9;
+            font-weight: 600;
+        }
+        input[type="file"] { display: none; }
+
         .control-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            width: 100%;
+            margin-top: 20px;
         }
         .control-group label {
-            min-width: 100px;
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
         }
-        .control-group input[type="range"] {
-            flex: 1;
+        .mode-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
         }
-        .control-group .value {
-            min-width: 40px;
+        .mode-btn {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fff;
+            cursor: pointer;
             text-align: center;
+            transition: all 0.2s;
         }
-        button {
-            padding: 10px 20px;
+        .mode-btn:hover { border-color: #4a90d9; }
+        .mode-btn.active {
+            border-color: #4a90d9;
+            background: #e8f0fe;
+            color: #1a56a0;
+        }
+        .mode-btn .title { font-weight: 600; font-size: 14px; }
+        .mode-btn .desc { font-size: 12px; color: #888; margin-top: 4px; }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .slider-group input[type="range"] {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #e0e0e0;
+            border-radius: 3px;
+            outline: none;
+        }
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4a90d9;
             cursor: pointer;
         }
-        button:disabled {
-            opacity: 0.5;
+        .slider-group .value {
+            min-width: 35px;
+            text-align: center;
+            font-weight: 600;
+            color: #4a90d9;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+        button {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #4a90d9;
+            color: #fff;
+        }
+        .btn-primary:hover { background: #357abd; }
+        .btn-primary:disabled {
+            background: #b0c4de;
             cursor: not-allowed;
         }
+        .btn-success {
+            background: #52c41a;
+            color: #fff;
+        }
+        .btn-success:hover { background: #45a816; }
+
         #message {
             margin-top: 20px;
-            padding: 10px;
-            background: #f0f0f0;
+            padding: 14px 18px;
+            border-radius: 8px;
+            font-size: 14px;
             display: none;
         }
-        #message.show {
-            display: block;
-        }
+        #message.show { display: block; }
+        #message.success { background: #f0fff0; color: #2e7d32; border: 1px solid #c8e6c9; }
+        #message.error { background: #fff3f3; color: #c62828; border: 1px solid #ffcdd2; }
+        #message.info { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+
+        .tip { font-size: 12px; color: #999; margin-top: 6px; }
+
         #download-link {
             display: none;
-            margin-top: 10px;
-            padding: 10px 20px;
-            background: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
+            margin-top: 15px;
+            text-align: center;
         }
-        #download-link.show {
-            display: inline-block;
-        }
-        .tip {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-        }
+        #download-link.show { display: block; }
     </style>
 </head>
 <body>
-    <h2>PDF 去水印工具</h2>
-    <div id="upload-section">
-        <input type="file" id="file-input" accept=".pdf">
+    <div class="container">
+        <h1>PDF 去水印工具</h1>
 
-        <div class="control-group">
-            <label for="sensitivity">灵敏度:</label>
-            <input type="range" id="sensitivity" min="1" max="100" value="50">
-            <span class="value" id="sensitivity-value">50</span>
+        <div class="card">
+            <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+                <div class="icon">+</div>
+                <p>点击或拖拽PDF文件到此处</p>
+                <div class="filename" id="filename"></div>
+            </div>
+            <input type="file" id="file-input" accept=".pdf">
         </div>
-        <p class="tip">灵敏度越高，水印去除越彻底，但可能影响内容清晰度</p>
 
-        <button id="upload-btn">上传PDF文件</button>
-        <button id="remove-watermark-btn" disabled>去除水印</button>
+        <div class="card">
+            <div class="control-group">
+                <label>水印类型</label>
+                <div class="mode-buttons">
+                    <div class="mode-btn active" data-mode="auto">
+                        <div class="title">自动检测</div>
+                        <div class="desc">智能识别并去除水印</div>
+                    </div>
+                    <div class="mode-btn" data-mode="gray">
+                        <div class="title">灰色水印</div>
+                        <div class="desc">半透明/浅灰水印</div>
+                    </div>
+                    <div class="mode-btn" data-mode="color">
+                        <div class="title">彩色水印</div>
+                        <div class="desc">有颜色的水印</div>
+                    </div>
+                    <div class="mode-btn" data-mode="dark">
+                        <div class="title">深色水印</div>
+                        <div class="desc">深色背景水印</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>去除强度</label>
+                <div class="slider-group">
+                    <span>弱</span>
+                    <input type="range" id="sensitivity" min="1" max="100" value="60">
+                    <span class="value" id="sensitivity-value">60</span>
+                    <span>强</span>
+                </div>
+                <p class="tip">强度越高去除越彻底，但可能影响灰色内容</p>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-primary" id="process-btn" disabled>开始处理</button>
+        </div>
+
+        <p id="message"></p>
+        <div id="download-link">
+            <a href="/download" download="output.pdf">
+                <button class="btn-success">下载处理后的PDF</button>
+            </a>
+        </div>
     </div>
-    <p id="message"></p>
-    <a id="download-link" href="#" download>下载处理后的PDF</a>
 
     <script>
-        // 灵敏度滑块实时显示
+        let selectedMode = 'auto';
+        let fileSelected = false;
+
+        // Mode buttons
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedMode = btn.dataset.mode;
+            });
+        });
+
+        // Sensitivity slider
         document.getElementById('sensitivity').addEventListener('input', (e) => {
             document.getElementById('sensitivity-value').textContent = e.target.value;
         });
 
-        document.getElementById('file-input').addEventListener('change', () => {
-            const fileInput = document.getElementById('file-input');
-            if (fileInput.files.length === 0) {
-                document.getElementById('upload-btn').innerText = '选择PDF文件';
-                document.getElementById('remove-watermark-btn').disabled = true;
-            } else {
-                document.getElementById('upload-btn').innerText = '开始上传';
-                document.getElementById('remove-watermark-btn').disabled = false;
+        // File input
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                document.getElementById('filename').textContent = e.target.files[0].name;
+                fileSelected = true;
+                document.getElementById('process-btn').disabled = false;
             }
         });
 
-        document.getElementById('upload-btn').addEventListener('click', async () => {
-            if (!document.getElementById('file-input').files.length) return;
+        // Drag and drop
+        const uploadArea = document.getElementById('upload-area');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (file.type === 'application/pdf') {
+                    const input = document.getElementById('file-input');
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    input.files = dt.files;
+                    document.getElementById('filename').textContent = file.name;
+                    fileSelected = true;
+                    document.getElementById('process-btn').disabled = false;
+                }
+            }
+        });
 
-            const formData = new FormData();
-            formData.append('file', document.getElementById('file-input').files[0]);
+        // Process button
+        document.getElementById('process-btn').addEventListener('click', async () => {
+            if (!fileSelected) return;
+
+            const btn = document.getElementById('process-btn');
+            const msg = document.getElementById('message');
+            btn.disabled = true;
+            btn.textContent = '上传中...';
+            msg.className = 'show info';
+            msg.textContent = '正在上传文件...';
 
             try {
+                const formData = new FormData();
+                formData.append('file', document.getElementById('file-input').files[0]);
                 await fetch('/upload', { method: 'POST', body: formData });
-                document.getElementById('message').textContent = '文件上传成功';
-                document.getElementById('message').classList.add('show');
-                document.getElementById('remove-watermark-btn').innerText = '去除水印并生成无水印PDF';
-            } catch (error) {
-                console.error('Error uploading file:', error);
-            }
-        });
 
-        document.getElementById('remove-watermark-btn').addEventListener('click', async () => {
-            const sensitivity = document.getElementById('sensitivity').value;
-            try {
-                document.getElementById('message').textContent = '处理中，请稍候...';
-                document.getElementById('message').classList.add('show');
+                btn.textContent = '处理中...';
+                msg.textContent = '正在去除水印，请稍候...';
 
-                await fetch(`/remove_watermark?sensitivity=${sensitivity}`);
-                document.getElementById('message').textContent = '水印去除成功！';
-                document.getElementById('download-link').href = '/download';
-                document.getElementById('download-link').classList.add('show');
+                const sensitivity = document.getElementById('sensitivity').value;
+                const resp = await fetch(`/remove_watermark?sensitivity=${sensitivity}&mode=${selectedMode}`);
+                const data = await resp.json();
+
+                if (data.status === 'ok') {
+                    msg.className = 'show success';
+                    msg.textContent = '水印去除成功！点击下方按钮下载。';
+                    document.getElementById('download-link').classList.add('show');
+                } else {
+                    msg.className = 'show error';
+                    msg.textContent = data.message || '处理失败，请重试';
+                }
             } catch (error) {
-                console.error('Error removing watermark:', error);
-                document.getElementById('message').textContent = '处理失败，请重试';
+                msg.className = 'show error';
+                msg.textContent = '处理出错: ' + error.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '开始处理';
             }
         });
     </script>
