@@ -26,3 +26,6 @@ output_file.pdf
 # OS
 .DS_Store
 Thumbs.db
+
+# Runtime task files (user uploads, auto-cleaned)
+tasks/

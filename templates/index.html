@@ -3,37 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF 去水印工具</title>
+    <title>PDF 工具箱</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: -apple-system, "Microsoft YaHei", sans-serif;
-            background: #f5f7fa;
+            font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+            background: #f0f2f5;
             color: #333;
             min-height: 100vh;
         }
-        .container {
-            max-width: 700px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        h1 {
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #4a90d9 0%, #357abd 100%);
+            color: #fff;
+            padding: 22px 0 20px;
             text-align: center;
-            font-size: 28px;
-            margin-bottom: 30px;
-            color: #1a1a2e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
+        .header h1 { font-size: 24px; font-weight: 600; letter-spacing: 1px; }
+        .header .subtitle { font-size: 12px; opacity: 0.85; margin-top: 6px; }
+
+        /* Navigation tabs */
+        .nav-bar {
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            overflow-x: auto;
+        }
+        .nav-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            padding: 0 10px;
+        }
+        .nav-tab {
+            padding: 14px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .nav-tab .ico { margin-right: 5px; font-size: 15px; }
+        .nav-tab:hover { color: #4a90d9; background: #f8fafd; }
+        .nav-tab.active {
+            color: #4a90d9;
+            border-bottom-color: #4a90d9;
+            font-weight: 600;
+        }
+
+        /* Main container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px 20px 48px;
+        }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
         .card {
             background: #fff;
             border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 28px;
+            margin-bottom: 18px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.07);
         }
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1a1a2e;
+        }
+
+        /* Upload area */
         .upload-area {
             border: 2px dashed #c0c8d4;
-            border-radius: 8px;
-            padding: 40px 20px;
+            border-radius: 10px;
+            padding: 36px 20px;
             text-align: center;
             cursor: pointer;
             transition: border-color 0.3s, background 0.3s;
@@ -42,291 +93,1526 @@
             border-color: #4a90d9;
             background: #f0f7ff;
         }
-        .upload-area .icon {
-            font-size: 40px;
-            margin-bottom: 10px;
-        }
+        .upload-area .icon { font-size: 42px; margin-bottom: 8px; color: #4a90d9; }
         .upload-area p { color: #666; font-size: 14px; }
-        .upload-area .filename {
-            margin-top: 10px;
-            color: #4a90d9;
-            font-weight: 600;
-        }
+        .upload-area .filename { margin-top: 8px; color: #4a90d9; font-weight: 600; font-size: 13px; word-break: break-all; }
         input[type="file"] { display: none; }
 
-        .control-group {
-            margin-top: 20px;
-        }
-        .control-group label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-        .mode-buttons {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        .mode-btn {
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            background: #fff;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s;
-        }
-        .mode-btn:hover { border-color: #4a90d9; }
-        .mode-btn.active {
-            border-color: #4a90d9;
-            background: #e8f0fe;
-            color: #1a56a0;
-        }
-        .mode-btn .title { font-weight: 600; font-size: 14px; }
-        .mode-btn .desc { font-size: 12px; color: #888; margin-top: 4px; }
-
-        .slider-group {
+        /* File list for multi-file uploads */
+        .file-list { margin-top: 14px; }
+        .file-item {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
+            padding: 10px 14px;
+            border: 1px solid #e8ecf0;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: #fafbfc;
+            cursor: grab;
+            transition: box-shadow 0.2s;
         }
+        .file-item:active { cursor: grabbing; }
+        .file-item.dragging { opacity: 0.4; }
+        .file-item.drag-over { border-color: #4a90d9; border-top: 3px solid #4a90d9; }
+        .file-item .drag-handle { color: #bbb; font-size: 18px; cursor: grab; flex-shrink: 0; }
+        .file-item .file-icon { font-size: 22px; flex-shrink: 0; }
+        .file-item .file-info { flex: 1; min-width: 0; }
+        .file-item .file-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-item .file-meta { font-size: 12px; color: #999; margin-top: 2px; }
+        .file-item .file-remove {
+            background: none; border: none; color: #c62828; cursor: pointer;
+            font-size: 18px; padding: 4px; flex-shrink: 0;
+        }
+        .file-item .page-range-input {
+            width: 100px; padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px;
+            font-size: 12px; flex-shrink: 0;
+        }
+        .file-thumb {
+            width: 36px; height: 48px; object-fit: cover; border-radius: 4px;
+            border: 1px solid #e0e0e0; flex-shrink: 0;
+        }
+
+        /* Control groups */
+        .control-group { margin-top: 20px; }
+        .control-group:first-child { margin-top: 0; }
+        .control-group > label {
+            display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; color: #444;
+        }
+
+        /* Mode buttons grid */
+        .mode-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .mode-btn {
+            padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+            background: #fff; cursor: pointer; text-align: center; transition: all 0.2s;
+        }
+        .mode-btn:hover { border-color: #4a90d9; }
+        .mode-btn.active { border-color: #4a90d9; background: #e8f0fe; color: #1a56a0; }
+        .mode-btn .title { font-weight: 600; font-size: 14px; }
+        .mode-btn .desc { font-size: 12px; color: #888; margin-top: 4px; }
+        .mode-btn.active .desc { color: #5a8abf; }
+
+        /* Radio group */
+        .radio-group { display: flex; flex-direction: column; gap: 8px; }
+        .radio-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 14px; border: 2px solid #e8ecf0; border-radius: 8px;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .radio-item:hover { border-color: #4a90d9; }
+        .radio-item.active { border-color: #4a90d9; background: #f0f7ff; }
+        .radio-item input[type="radio"] { margin-top: 3px; accent-color: #4a90d9; }
+        .radio-item .radio-label { font-weight: 500; font-size: 14px; }
+        .radio-item .radio-desc { font-size: 12px; color: #888; margin-top: 2px; }
+        .radio-item.active .radio-desc { color: #5a8abf; }
+
+        /* Select dropdown */
+        select, input[type="text"], input[type="number"] {
+            width: 100%; padding: 9px 12px; border: 1px solid #d0d7de;
+            border-radius: 7px; font-size: 14px; background: #fff; color: #333;
+        }
+        select:focus, input[type="text"]:focus, input[type="number"]:focus {
+            outline: none; border-color: #4a90d9; box-shadow: 0 0 0 3px rgba(74,144,217,0.12);
+        }
+        .inline-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .inline-row > * { flex: 1; min-width: 120px; }
+
+        /* Slider */
+        .slider-group { display: flex; align-items: center; gap: 12px; }
         .slider-group input[type="range"] {
-            flex: 1;
-            height: 6px;
-            -webkit-appearance: none;
-            background: #e0e0e0;
-            border-radius: 3px;
-            outline: none;
+            flex: 1; height: 6px; -webkit-appearance: none;
+            background: #e0e0e0; border-radius: 3px; outline: none;
         }
         .slider-group input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #4a90d9;
-            cursor: pointer;
+            -webkit-appearance: none; width: 18px; height: 18px;
+            border-radius: 50%; background: #4a90d9; cursor: pointer;
         }
         .slider-group .value {
-            min-width: 35px;
-            text-align: center;
-            font-weight: 600;
-            color: #4a90d9;
+            min-width: 35px; text-align: center; font-weight: 600; color: #4a90d9;
         }
 
-        .btn-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 25px;
-        }
+        /* Buttons */
+        .btn-group { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
         button {
-            flex: 1;
-            padding: 14px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
+            padding: 12px 24px; border: none; border-radius: 8px;
+            font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;
         }
-        .btn-primary {
-            background: #4a90d9;
-            color: #fff;
+        .btn-primary { background: #4a90d9; color: #fff; flex: 1; min-width: 140px; }
+        .btn-primary:hover:not(:disabled) { background: #357abd; }
+        .btn-primary:disabled { background: #b0c4de; cursor: not-allowed; }
+        .btn-success { background: #52c41a; color: #fff; }
+        .btn-success:hover:not(:disabled) { background: #45a816; }
+        .btn-outline {
+            background: #fff; color: #4a90d9; border: 2px solid #4a90d9;
         }
-        .btn-primary:hover { background: #357abd; }
-        .btn-primary:disabled {
-            background: #b0c4de;
-            cursor: not-allowed;
-        }
-        .btn-success {
-            background: #52c41a;
-            color: #fff;
-        }
-        .btn-success:hover { background: #45a816; }
+        .btn-outline:hover { background: #f0f7ff; }
+        .btn-sm { padding: 7px 14px; font-size: 13px; border-radius: 6px; }
 
-        #message {
-            margin-top: 20px;
-            padding: 14px 18px;
-            border-radius: 8px;
-            font-size: 14px;
-            display: none;
+        /* Message */
+        .message {
+            margin-top: 18px; padding: 12px 16px; border-radius: 8px;
+            font-size: 14px; display: none; line-height: 1.5;
         }
-        #message.show { display: block; }
-        #message.success { background: #f0fff0; color: #2e7d32; border: 1px solid #c8e6c9; }
-        #message.error { background: #fff3f3; color: #c62828; border: 1px solid #ffcdd2; }
-        #message.info { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+        .message.show { display: block; }
+        .message.success { background: #f0fff0; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .message.error { background: #fff3f3; color: #c62828; border: 1px solid #ffcdd2; }
+        .message.info { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
 
-        .tip { font-size: 12px; color: #999; margin-top: 6px; }
-
-        #download-link {
-            display: none;
-            margin-top: 15px;
-            text-align: center;
+        /* Info bar */
+        .info-bar {
+            display: flex; gap: 16px; flex-wrap: wrap;
+            padding: 12px 16px; background: #f8fafd;
+            border-radius: 8px; margin-top: 14px; font-size: 13px; color: #555;
         }
-        #download-link.show { display: block; }
+        .info-bar .info-item strong { color: #333; }
+
+        /* Hint banner for word tools */
+        .hint-banner {
+            display: flex; gap: 10px; align-items: flex-start;
+            padding: 12px 14px; border-radius: 8px; font-size: 13px;
+            line-height: 1.6; margin-top: 14px;
+        }
+        .hint-banner.blue { background: #eef5fd; color: #2c6aa0; border: 1px solid #cfe3f7; }
+        .hint-banner.amber { background: #fff9ec; color: #9a6b00; border: 1px solid #f5e3b3; }
+
+        /* Thumbnails grid */
+        .thumbs-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px; margin-top: 16px;
+        }
+        .thumb-item {
+            border: 2px solid #e0e0e0; border-radius: 6px; overflow: hidden;
+            cursor: pointer; transition: all 0.15s; position: relative; background: #f5f5f5;
+        }
+        .thumb-item:hover { border-color: #4a90d9; }
+        .thumb-item.selected { border-color: #4a90d9; background: #e8f0fe; }
+        .thumb-item.selected::after {
+            content: '✓'; position: absolute; top: 4px; right: 4px;
+            width: 20px; height: 20px; background: #4a90d9; color: #fff;
+            border-radius: 50%; font-size: 12px; display: flex;
+            align-items: center; justify-content: center;
+        }
+        .thumb-item img { width: 100%; height: 150px; object-fit: contain; display: block; }
+        .thumb-item .thumb-label {
+            text-align: center; font-size: 11px; padding: 4px;
+            background: #f5f5f5; color: #666;
+        }
+        .thumb-item.selected .thumb-label { background: #e8f0fe; color: #1a56a0; }
+
+        /* Preview area */
+        .preview-area { margin-top: 16px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .preview-thumb {
+            width: 100px; height: 130px; border: 1px solid #ddd;
+            border-radius: 6px; overflow: hidden; position: relative;
+        }
+        .preview-thumb img { width: 100%; height: 100%; object-fit: contain; background: #f5f5f5; }
+
+        /* Split tabs */
+        .sub-tabs { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 2px solid #e8ecf0; }
+        .sub-tab {
+            padding: 10px 18px; cursor: pointer; font-size: 13px;
+            font-weight: 500; color: #666; border-bottom: 2px solid transparent;
+            margin-bottom: -2px; transition: all 0.2s;
+        }
+        .sub-tab:hover { color: #4a90d9; }
+        .sub-tab.active { color: #4a90d9; border-bottom-color: #4a90d9; font-weight: 600; }
+
+        /* Checkbox */
+        .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: #4a90d9; }
+        .checkbox-row label { font-size: 13px; color: #555; cursor: pointer; }
+
+        /* Tip */
+        .tip { font-size: 12px; color: #999; margin-top: 5px; }
+
+        /* Result file list */
+        .result-list { margin-top: 16px; }
+        .result-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; border: 1px solid #e0ecf0;
+            border-radius: 8px; margin-bottom: 8px; background: #f8fbfd;
+        }
+        .result-item .rname { flex: 1; font-size: 13px; font-weight: 500; }
+        .result-item .rmeta { font-size: 12px; color: #888; }
+
+        /* Thumbnail page grid for split */
+        .page-grid-wrap {
+            max-height: 420px; overflow-y: auto; border: 1px solid #e8ecf0;
+            border-radius: 8px; padding: 10px; margin-top: 12px;
+        }
+        .page-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px;
+        }
+        .page-cell {
+            border: 2px solid #e0e0e0; border-radius: 4px; overflow: hidden;
+            cursor: pointer; transition: all 0.15s; text-align: center;
+        }
+        .page-cell:hover { border-color: #4a90d9; }
+        .page-cell.selected { border-color: #4a90d9; background: #e8f0fe; }
+        .page-cell img { width: 100%; height: 110px; object-fit: contain; background: #fafafa; }
+        .page-cell .pnum { font-size: 11px; padding: 2px; background: #f5f5f5; color: #666; }
+        .page-cell.selected .pnum { background: #4a90d9; color: #fff; }
+
+        /* Size comparison for compress */
+        .size-compare {
+            display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px;
+            align-items: center; margin-top: 16px; text-align: center;
+        }
+        .size-box { padding: 16px; border-radius: 8px; }
+        .size-box.before { background: #fff3f3; border: 1px solid #ffcdd2; }
+        .size-box.after { background: #f0fff0; border: 1px solid #c8e6c9; }
+        .size-box .sz-label { font-size: 12px; color: #888; }
+        .size-box .sz-val { font-size: 20px; font-weight: 700; margin-top: 4px; }
+        .size-box.before .sz-val { color: #c62828; }
+        .size-box.after .sz-val { color: #2e7d32; }
+        .size-arrow { font-size: 24px; color: #aaa; }
+        .ratio-badge {
+            text-align: center; margin-top: 12px;
+            padding: 10px; background: #f0fff0; border-radius: 8px;
+            font-size: 16px; font-weight: 600; color: #2e7d32;
+        }
+        .ratio-badge.no-gain { background: #fff8e1; color: #f57f17; }
+
+        /* Hidden */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>PDF 去水印工具</h1>
 
-        <div class="card">
-            <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
-                <div class="icon">+</div>
-                <p>点击或拖拽PDF文件到此处</p>
-                <div class="filename" id="filename"></div>
-            </div>
-            <input type="file" id="file-input" accept=".pdf">
+<div class="header">
+    <h1>📘 PDF 工具箱</h1>
+    <div class="subtitle">去水印 · 格式转换 · 合并拆分 · 压缩，一站式在线处理</div>
+</div>
+
+<div class="nav-bar">
+    <div class="nav-inner">
+        <div class="nav-tab active" data-tab="watermark"><span class="ico">🧽</span>去水印</div>
+        <div class="nav-tab" data-tab="word2pdf"><span class="ico">📝</span>Word转PDF</div>
+        <div class="nav-tab" data-tab="pdf2word"><span class="ico">📗</span>PDF转Word</div>
+        <div class="nav-tab" data-tab="pdf2img"><span class="ico">🖼</span>PDF转图片</div>
+        <div class="nav-tab" data-tab="img2pdf"><span class="ico">📄</span>图片转PDF</div>
+        <div class="nav-tab" data-tab="merge"><span class="ico">📑</span>PDF合并</div>
+        <div class="nav-tab" data-tab="split"><span class="ico">✂️</span>PDF拆分</div>
+        <div class="nav-tab" data-tab="compress"><span class="ico">🗜</span>PDF压缩</div>
+    </div>
+</div>
+
+<div class="container">
+
+<!-- ========== TAB 1: WATERMARK REMOVAL ========== -->
+<div class="tab-panel active" id="tab-watermark">
+    <div class="card">
+        <div class="upload-area" id="wm-upload" onclick="document.getElementById('wm-file').click()">
+            <div class="icon">＋</div>
+            <p>点击或拖拽PDF文件到此处上传</p>
+            <div class="filename" id="wm-filename"></div>
         </div>
+        <input type="file" id="wm-file" accept=".pdf">
+    </div>
 
-        <div class="card">
-            <div class="control-group">
-                <label>水印类型</label>
-                <div class="mode-buttons">
-                    <div class="mode-btn active" data-mode="auto">
-                        <div class="title">自动检测</div>
-                        <div class="desc">智能识别并去除水印</div>
-                    </div>
-                    <div class="mode-btn" data-mode="gray">
-                        <div class="title">灰色水印</div>
-                        <div class="desc">半透明/浅灰水印</div>
-                    </div>
-                    <div class="mode-btn" data-mode="color">
-                        <div class="title">彩色水印</div>
-                        <div class="desc">有颜色的水印</div>
-                    </div>
-                    <div class="mode-btn" data-mode="dark">
-                        <div class="title">深色水印</div>
-                        <div class="desc">深色背景水印</div>
-                    </div>
+    <div class="card">
+        <div class="control-group">
+            <label>水印类型</label>
+            <div class="mode-buttons" id="wm-mode-btns">
+                <div class="mode-btn active" data-mode="auto">
+                    <div class="title">自动检测</div>
+                    <div class="desc">智能识别并去除水印</div>
+                </div>
+                <div class="mode-btn" data-mode="gray">
+                    <div class="title">灰色水印</div>
+                    <div class="desc">半透明/浅灰水印</div>
+                </div>
+                <div class="mode-btn" data-mode="color">
+                    <div class="title">彩色水印</div>
+                    <div class="desc">有颜色的水印</div>
+                </div>
+                <div class="mode-btn" data-mode="dark">
+                    <div class="title">深色水印</div>
+                    <div class="desc">深色背景水印</div>
                 </div>
             </div>
-
-            <div class="control-group">
-                <label>去除强度</label>
-                <div class="slider-group">
-                    <span>弱</span>
-                    <input type="range" id="sensitivity" min="1" max="100" value="60">
-                    <span class="value" id="sensitivity-value">60</span>
-                    <span>强</span>
-                </div>
-                <p class="tip">强度越高去除越彻底，但可能影响灰色内容</p>
+        </div>
+        <div class="control-group">
+            <label>去除强度</label>
+            <div class="slider-group">
+                <span>弱</span>
+                <input type="range" id="wm-sensitivity" min="1" max="100" value="60">
+                <span class="value" id="wm-sens-val">60</span>
+                <span>强</span>
             </div>
-        </div>
-
-        <div class="btn-group">
-            <button class="btn-primary" id="process-btn" disabled>开始处理</button>
-        </div>
-
-        <p id="message"></p>
-        <div id="download-link">
-            <a href="#" id="download-btn">
-                <button class="btn-success">下载处理后的PDF</button>
-            </a>
+            <p class="tip">强度越高去除越彻底，但可能影响灰色内容</p>
         </div>
     </div>
 
-    <script>
-        let selectedMode = 'auto';
-        let fileSelected = false;
-        let taskId = null;
+    <div class="btn-group">
+        <button class="btn-primary" id="wm-process-btn" disabled>开始处理</button>
+    </div>
+    <div class="message" id="wm-msg"></div>
+    <div id="wm-download" style="display:none; margin-top:16px; text-align:center;">
+        <a href="#" id="wm-dl-btn"><button class="btn-success">下载处理后的PDF</button></a>
+    </div>
+</div>
 
-        // Mode buttons
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                selectedMode = btn.dataset.mode;
+<!-- ========== TAB 2: WORD TO PDF ========== -->
+<div class="tab-panel" id="tab-word2pdf">
+    <div class="card">
+        <div class="upload-area" id="w2p-upload" onclick="document.getElementById('w2p-file').click()">
+            <div class="icon">📝</div>
+            <p>点击或拖拽 Word 文档到此处上传</p>
+            <div class="filename" id="w2p-filename"></div>
+        </div>
+        <input type="file" id="w2p-file" accept=".doc,.docx">
+        <div class="info-bar hidden" id="w2p-info">
+            <div class="info-item">文件名: <strong id="w2p-fname">-</strong></div>
+            <div class="info-item">大小: <strong id="w2p-size">-</strong></div>
+        </div>
+        <div class="hint-banner blue">
+            <span>💡</span>
+            <span>基于本机 Microsoft Word 渲染转换，公式、图表、页眉页脚等复杂排版可完整保留。首次转换需要启动 Word，约需 5-15 秒。</span>
+        </div>
+    </div>
+
+    <div class="btn-group hidden" id="w2p-btns">
+        <button class="btn-primary" id="w2p-convert-btn">开始转换</button>
+    </div>
+    <div class="message" id="w2p-msg"></div>
+
+    <div class="card hidden" id="w2p-result">
+        <div class="card-title">转换结果</div>
+        <div class="info-bar">
+            <div class="info-item">PDF大小: <strong id="w2p-result-size">-</strong></div>
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+            <a href="#" id="w2p-dl-btn"><button class="btn-success">下载 PDF</button></a>
+        </div>
+    </div>
+</div>
+
+<!-- ========== TAB 3: PDF TO WORD ========== -->
+<div class="tab-panel" id="tab-pdf2word">
+    <div class="card">
+        <div class="upload-area" id="p2w-upload" onclick="document.getElementById('p2w-file').click()">
+            <div class="icon">📗</div>
+            <p>点击或拖拽PDF文件到此处上传</p>
+            <div class="filename" id="p2w-filename"></div>
+        </div>
+        <input type="file" id="p2w-file" accept=".pdf">
+        <div class="info-bar hidden" id="p2w-info">
+            <div class="info-item">页数: <strong id="p2w-pages">0</strong></div>
+            <div class="info-item">文件名: <strong id="p2w-fname">-</strong></div>
+        </div>
+        <div class="hint-banner amber">
+            <span>⚠️</span>
+            <span>纯文字/表格类 PDF 转换效果最佳；扫描件（图片型PDF）转换后为页面图片，无法编辑文字。</span>
+        </div>
+    </div>
+
+    <div class="card hidden" id="p2w-options">
+        <div class="card-title">转换设置</div>
+        <div class="control-group">
+            <label>页面范围</label>
+            <div class="inline-row">
+                <select id="p2w-range-mode">
+                    <option value="all">全部页面</option>
+                    <option value="custom">指定范围</option>
+                </select>
+            </div>
+            <input type="text" id="p2w-range-input" placeholder="例如: 1-3,5,7-9"
+                   style="margin-top:8px; display:none;">
+            <p class="tip">留空表示全部页面，格式示例: 1-3,5,7-9</p>
+        </div>
+    </div>
+
+    <div class="btn-group hidden" id="p2w-btns">
+        <button class="btn-primary" id="p2w-convert-btn">开始转换</button>
+    </div>
+    <div class="message" id="p2w-msg"></div>
+
+    <div class="card hidden" id="p2w-result">
+        <div class="card-title">转换结果</div>
+        <div class="info-bar">
+            <div class="info-item">Word大小: <strong id="p2w-result-size">-</strong></div>
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+            <a href="#" id="p2w-dl-btn"><button class="btn-success">下载 Word 文档</button></a>
+        </div>
+    </div>
+</div>
+
+<!-- ========== TAB 4: PDF TO IMAGE ========== -->
+<div class="tab-panel" id="tab-pdf2img">
+    <div class="card">
+        <div class="upload-area" id="p2i-upload" onclick="document.getElementById('p2i-file').click()">
+            <div class="icon">🖼</div>
+            <p>点击或拖拽PDF文件到此处上传</p>
+            <div class="filename" id="p2i-filename"></div>
+        </div>
+        <input type="file" id="p2i-file" accept=".pdf">
+        <div class="info-bar hidden" id="p2i-info">
+            <div class="info-item">页数: <strong id="p2i-pages">0</strong></div>
+            <div class="info-item">文件名: <strong id="p2i-fname">-</strong></div>
+        </div>
+    </div>
+
+    <div class="card hidden" id="p2i-options">
+        <div class="card-title">转换设置</div>
+        <div class="control-group">
+            <label>输出格式</label>
+            <div class="inline-row">
+                <select id="p2i-format">
+                    <option value="png">PNG（无损）</option>
+                    <option value="jpeg" selected>JPEG（有损，体积小）</option>
+                    <option value="webp">WebP（高效率压缩）</option>
+                </select>
+            </div>
+        </div>
+        <div class="control-group">
+            <label>分辨率（DPI）</label>
+            <div class="inline-row">
+                <select id="p2i-dpi">
+                    <option value="72">72 DPI（低清）</option>
+                    <option value="150">150 DPI（普通）</option>
+                    <option value="300" selected>300 DPI（高清）</option>
+                    <option value="600">600 DPI（超高清）</option>
+                </select>
+            </div>
+        </div>
+        <div class="control-group hidden" id="p2i-quality-group">
+            <label>JPEG质量</label>
+            <div class="slider-group">
+                <span>低</span>
+                <input type="range" id="p2i-quality" min="1" max="100" value="90">
+                <span class="value" id="p2i-qval">90</span>
+                <span>高</span>
+            </div>
+        </div>
+        <div class="control-group">
+            <label>页面范围</label>
+            <div class="inline-row">
+                <select id="p2i-range-mode">
+                    <option value="all">全部页面</option>
+                    <option value="custom">指定范围</option>
+                </select>
+            </div>
+            <input type="text" id="p2i-range-input" placeholder="例如: 1-3,5,7-9"
+                   style="margin-top:8px; display:none;" class="hidden">
+            <p class="tip">留空表示全部页面，格式示例: 1-3,5,7-9</p>
+        </div>
+    </div>
+
+    <div class="btn-group hidden" id="p2i-btns">
+        <button class="btn-primary" id="p2i-convert-btn">开始转换</button>
+    </div>
+    <div class="message" id="p2i-msg"></div>
+
+    <div class="card hidden" id="p2i-result-card">
+        <div class="card-title">转换结果</div>
+        <div class="info-bar">
+            <div class="info-item">共转换: <strong id="p2i-result-count">0</strong> 页</div>
+        </div>
+        <div class="preview-area" id="p2i-thumbs"></div>
+        <div class="btn-group" style="margin-top:16px;">
+            <button class="btn-success" id="p2i-zip-btn">打包下载 ZIP</button>
+            <button class="btn-outline" id="p2i-list-btn">逐张下载</button>
+        </div>
+        <div class="file-list hidden" id="p2i-file-list"></div>
+    </div>
+</div>
+
+<!-- ========== TAB 5: IMAGE TO PDF ========== -->
+<div class="tab-panel" id="tab-img2pdf">
+    <div class="card">
+        <div class="upload-area" id="i2p-upload" onclick="document.getElementById('i2p-files').click()">
+            <div class="icon">📄</div>
+            <p>点击或拖拽多张图片到此处上传（支持PNG/JPG/WebP/BMP）</p>
+            <div class="filename" id="i2p-filename"></div>
+        </div>
+        <input type="file" id="i2p-files" accept="image/png,image/jpeg,image/webp,image/bmp" multiple>
+        <div class="file-list" id="i2p-file-list"></div>
+    </div>
+
+    <div class="card hidden" id="i2p-options">
+        <div class="card-title">输出设置</div>
+        <div class="control-group">
+            <label>页面布局</label>
+            <div class="radio-group" id="i2p-layout">
+                <div class="radio-item active" data-layout="original">
+                    <input type="radio" name="i2p-layout" value="original" checked>
+                    <div>
+                        <div class="radio-label">原始尺寸</div>
+                        <div class="radio-desc">保持图片原始尺寸，不缩放</div>
+                    </div>
+                </div>
+                <div class="radio-item" data-layout="a4_portrait">
+                    <input type="radio" name="i2p-layout" value="a4_portrait">
+                    <div>
+                        <div class="radio-label">A4 竖版</div>
+                        <div class="radio-desc">图片等比缩放至A4页面，居中留白</div>
+                    </div>
+                </div>
+                <div class="radio-item" data-layout="a4_landscape">
+                    <input type="radio" name="i2p-layout" value="a4_landscape">
+                    <div>
+                        <div class="radio-label">A4 横版</div>
+                        <div class="radio-desc">图片等比缩放至横版A4，居中留白</div>
+                    </div>
+                </div>
+            </div>
+            <div class="checkbox-row">
+                <input type="checkbox" id="i2p-autorotate">
+                <label for="i2p-autorotate">自动旋转：竖图用竖版、横图用横版，最大化利用页面空间</label>
+            </div>
+            <p class="tip">提示：拖拽文件列表可调整图片顺序</p>
+        </div>
+    </div>
+
+    <div class="btn-group hidden" id="i2p-btns">
+        <button class="btn-primary" id="i2p-convert-btn">生成 PDF</button>
+    </div>
+    <div class="message" id="i2p-msg"></div>
+    <div id="i2p-download" style="display:none; margin-top:16px; text-align:center;">
+        <a href="#" id="i2p-dl-btn"><button class="btn-success">下载 PDF</button></a>
+    </div>
+</div>
+
+<!-- ========== TAB 6: PDF MERGE ========== -->
+<div class="tab-panel" id="tab-merge">
+    <div class="card">
+        <div class="upload-area" id="mrg-upload" onclick="document.getElementById('mrg-files').click()">
+            <div class="icon">📑</div>
+            <p>点击或拖拽多个PDF文件到此处上传</p>
+            <div class="filename" id="mrg-filename"></div>
+        </div>
+        <input type="file" id="mrg-files" accept=".pdf" multiple>
+        <div class="file-list" id="mrg-file-list"></div>
+        <div class="info-bar hidden" id="mrg-estimate">
+            <div class="info-item">预估合并页数: <strong id="mrg-est-pages">0</strong></div>
+        </div>
+        <p class="tip" style="margin-top:8px;">提示：拖拽文件可调整合并顺序，输入框可指定每个文件的页码范围（如 1-3,5）</p>
+    </div>
+
+    <div class="btn-group hidden" id="mrg-btns">
+        <button class="btn-primary" id="mrg-merge-btn">合并 PDF</button>
+    </div>
+    <div class="message" id="mrg-msg"></div>
+    <div id="mrg-result" class="card hidden">
+        <div class="card-title">合并结果</div>
+        <div class="info-bar">
+            <div class="info-item">总页数: <strong id="mrg-result-pages">0</strong></div>
+            <div class="info-item">文件大小: <strong id="mrg-result-size">0</strong></div>
+        </div>
+        <div style="text-align:center; margin-top:16px;">
+            <a href="#" id="mrg-dl-btn"><button class="btn-success">下载合并后的PDF</button></a>
+        </div>
+    </div>
+</div>
+
+<!-- ========== TAB 7: PDF SPLIT ========== -->
+<div class="tab-panel" id="tab-split">
+    <div class="card">
+        <div class="upload-area" id="spl-upload" onclick="document.getElementById('spl-file').click()">
+            <div class="icon">✂️</div>
+            <p>点击或拖拽PDF文件到此处上传</p>
+            <div class="filename" id="spl-filename"></div>
+        </div>
+        <input type="file" id="spl-file" accept=".pdf">
+        <div class="info-bar hidden" id="spl-info">
+            <div class="info-item">页数: <strong id="spl-pages">0</strong></div>
+            <div class="info-item">文件大小: <strong id="spl-size">0</strong></div>
+        </div>
+    </div>
+
+    <div class="card hidden" id="spl-options">
+        <div class="card-title">拆分方式</div>
+        <div class="sub-tabs" id="spl-subtabs">
+            <div class="sub-tab active" data-mode="every_n">每N页分割</div>
+            <div class="sub-tab" data-mode="ranges">按页码范围</div>
+            <div class="sub-tab" data-mode="selected">选中页面</div>
+        </div>
+
+        <!-- Every N pages -->
+        <div class="sub-panel" id="spl-panel-every_n">
+            <div class="control-group">
+                <label>每 N 页分割为一个文件</label>
+                <input type="number" id="spl-n" value="3" min="1" style="width:100px;">
+                <p class="tip">例如9页PDF按每3页拆分为4个文件（3+3+3+1）</p>
+            </div>
+        </div>
+
+        <!-- Page ranges -->
+        <div class="sub-panel hidden" id="spl-panel-ranges">
+            <div class="control-group">
+                <label>页码范围</label>
+                <input type="text" id="spl-ranges-input" placeholder="例如: 1-3 4-6 7-9（用空格分隔）">
+                <p class="tip">用空格分隔多个范围，如"1-3 4-6 7"将生成3个文件</p>
+            </div>
+        </div>
+
+        <!-- Selected pages -->
+        <div class="sub-panel hidden" id="spl-panel-selected">
+            <p style="font-size:13px; color:#666; margin-bottom:8px;">点击缩略图选中/取消页面，所有选中页面合并为一个文件</p>
+            <div id="spl-selected-count" style="font-size:13px; margin-bottom:8px;">已选中: <strong>0</strong> 页</div>
+            <div class="page-grid-wrap" id="spl-page-grid-wrap">
+                <div class="page-grid" id="spl-page-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-group hidden" id="spl-btns">
+        <button class="btn-primary" id="spl-split-btn">开始拆分</button>
+    </div>
+    <div class="message" id="spl-msg"></div>
+
+    <div class="card hidden" id="spl-result-card">
+        <div class="card-title">拆分结果</div>
+        <div class="result-list" id="spl-result-list"></div>
+        <div class="btn-group">
+            <button class="btn-success" id="spl-zip-btn">打包下载 ZIP</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== TAB 8: PDF COMPRESS ========== -->
+<div class="tab-panel" id="tab-compress">
+    <div class="card">
+        <div class="upload-area" id="cmp-upload" onclick="document.getElementById('cmp-file').click()">
+            <div class="icon">🗜</div>
+            <p>点击或拖拽PDF文件到此处上传</p>
+            <div class="filename" id="cmp-filename"></div>
+        </div>
+        <input type="file" id="cmp-file" accept=".pdf">
+        <div class="info-bar hidden" id="cmp-info">
+            <div class="info-item">页数: <strong id="cmp-pages">0</strong></div>
+            <div class="info-item">原始大小: <strong id="cmp-size">0</strong></div>
+        </div>
+    </div>
+
+    <div class="card hidden" id="cmp-options">
+        <div class="card-title">压缩级别</div>
+        <div class="radio-group" id="cmp-levels">
+            <div class="radio-item" data-level="light">
+                <input type="radio" name="cmp-level" value="light">
+                <div>
+                    <div class="radio-label">轻度压缩</div>
+                    <div class="radio-desc">无损优化，去除冗余对象，不改变画质</div>
+                </div>
+            </div>
+            <div class="radio-item active" data-level="standard">
+                <input type="radio" name="cmp-level" value="standard" checked>
+                <div>
+                    <div class="radio-label">标准压缩</div>
+                    <div class="radio-desc">无损+线性化优化，适合大多数场景</div>
+                </div>
+            </div>
+            <div class="radio-item" data-level="strong">
+                <input type="radio" name="cmp-level" value="strong">
+                <div>
+                    <div class="radio-label">强力压缩</div>
+                    <div class="radio-desc">有损压缩，图片降至150DPI，体积最小</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-group hidden" id="cmp-btns">
+        <button class="btn-primary" id="cmp-compress-btn">开始压缩</button>
+    </div>
+    <div class="message" id="cmp-msg"></div>
+
+    <div class="card hidden" id="cmp-result">
+        <div class="card-title">压缩结果</div>
+        <div class="size-compare">
+            <div class="size-box before">
+                <div class="sz-label">原始大小</div>
+                <div class="sz-val" id="cmp-before-size">-</div>
+            </div>
+            <div class="size-arrow">→</div>
+            <div class="size-box after">
+                <div class="sz-label">压缩后</div>
+                <div class="sz-val" id="cmp-after-size">-</div>
+            </div>
+        </div>
+        <div class="ratio-badge" id="cmp-ratio"></div>
+        <div style="text-align:center; margin-top:16px;">
+            <a href="#" id="cmp-dl-btn"><button class="btn-success">下载压缩后的PDF</button></a>
+        </div>
+    </div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ================================================================
+// SHARED HELPERS
+// ================================================================
+function showMsg(elId, text, type) {
+    const el = document.getElementById(elId);
+    el.className = 'message show ' + type;
+    el.textContent = text;
+}
+function hideMsg(elId) {
+    document.getElementById(elId).className = 'message';
+    document.getElementById(elId).textContent = '';
+}
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1048576).toFixed(2) + ' MB';
+}
+
+// Drag and drop helper for upload areas
+function setupDragDrop(areaId, inputId, onFile) {
+    const area = document.getElementById(areaId);
+    const input = document.getElementById(inputId);
+    area.addEventListener('dragover', e => { e.preventDefault(); area.classList.add('dragover'); });
+    area.addEventListener('dragleave', () => area.classList.remove('dragover'));
+    area.addEventListener('drop', e => {
+        e.preventDefault(); area.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+            const dt = new DataTransfer();
+            for (const f of e.dataTransfer.files) dt.items.add(f);
+            input.files = dt.files;
+            onFile(e.dataTransfer.files);
+        }
+    });
+    input.addEventListener('change', () => {
+        if (input.files.length > 0) onFile(input.files);
+    });
+}
+
+// Native drag-and-drop sort for lists
+function makeSortable(container, onOrderChange) {
+    let dragEl = null;
+    container.addEventListener('dragstart', e => {
+        const item = e.target.closest('.file-item');
+        if (!item || !container.contains(item)) return;
+        dragEl = item;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    });
+    container.addEventListener('dragend', () => {
+        if (dragEl) dragEl.classList.remove('dragging');
+        dragEl = null;
+        const order = [];
+        container.querySelectorAll('.file-item').forEach(it => {
+            if (it.dataset.savedName) order.push(it.dataset.savedName);
+        });
+        if (onOrderChange) onOrderChange(order);
+    });
+    container.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!dragEl) return;
+        const afterEl = getDragAfterElement(container, e.clientY);
+        if (afterEl == null) {
+            container.appendChild(dragEl);
+        } else {
+            container.insertBefore(dragEl, afterEl);
+        }
+    });
+}
+function getDragAfterElement(container, y) {
+    const items = [...container.querySelectorAll('.file-item:not(.dragging)')];
+    return items.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+// ================================================================
+// TAB NAVIGATION
+// ================================================================
+document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+});
+
+// ================================================================
+// TAB 1: WATERMARK REMOVAL
+// ================================================================
+(function() {
+    let selectedMode = 'auto';
+    let fileSelected = false;
+    let taskId = null;
+
+    document.querySelectorAll('#wm-mode-btns .mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#wm-mode-btns .mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedMode = btn.dataset.mode;
+        });
+    });
+    document.getElementById('wm-sensitivity').addEventListener('input', e => {
+        document.getElementById('wm-sens-val').textContent = e.target.value;
+    });
+
+    setupDragDrop('wm-upload', 'wm-file', files => {
+        if (files[0].type !== 'application/pdf' && !files[0].name.toLowerCase().endsWith('.pdf')) {
+            showMsg('wm-msg', '请上传PDF文件', 'error'); return;
+        }
+        document.getElementById('wm-filename').textContent = files[0].name;
+        fileSelected = true;
+        document.getElementById('wm-process-btn').disabled = false;
+    });
+
+    document.getElementById('wm-process-btn').addEventListener('click', async () => {
+        if (!fileSelected) return;
+        const btn = document.getElementById('wm-process-btn');
+        btn.disabled = true; btn.textContent = '上传中...';
+        showMsg('wm-msg', '正在上传文件...', 'info');
+        try {
+            const fd = new FormData();
+            fd.append('file', document.getElementById('wm-file').files[0]);
+            const ur = await fetch('/upload', { method: 'POST', body: fd });
+            const ud = await ur.json();
+            if (ud.status !== 'ok') throw new Error(ud.message || '上传失败');
+            taskId = ud.task_id;
+
+            btn.textContent = '处理中...';
+            showMsg('wm-msg', '正在去除水印，请稍候...', 'info');
+            const sens = document.getElementById('wm-sensitivity').value;
+            const rr = await fetch(`/remove_watermark?sensitivity=${sens}&mode=${selectedMode}&task_id=${taskId}`);
+            const rd = await rr.json();
+            if (rd.status === 'ok') {
+                showMsg('wm-msg', '水印去除成功！点击下方按钮下载。', 'success');
+                document.getElementById('wm-download').style.display = 'block';
+                document.getElementById('wm-dl-btn').href = '/download?task_id=' + taskId;
+            } else {
+                showMsg('wm-msg', rd.message || '处理失败', 'error');
+            }
+        } catch(err) {
+            showMsg('wm-msg', '处理出错: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = '开始处理';
+        }
+    });
+})();
+
+// ================================================================
+// TAB 2: WORD TO PDF
+// ================================================================
+(function() {
+    let taskId = null;
+
+    setupDragDrop('w2p-upload', 'w2p-file', files => {
+        const f = files[0];
+        const ext = f.name.split('.').pop().toLowerCase();
+        if (ext !== 'doc' && ext !== 'docx') {
+            showMsg('w2p-msg', '请上传 .doc 或 .docx 格式的Word文档', 'error'); return;
+        }
+        document.getElementById('w2p-filename').textContent = f.name;
+        showMsg('w2p-msg', '正在上传...', 'info');
+        const fd = new FormData(); fd.append('file', f);
+        fetch('/word2pdf/upload', { method: 'POST', body: fd }).then(r => r.json()).then(d => {
+            if (d.status !== 'ok') { showMsg('w2p-msg', d.message, 'error'); return; }
+            taskId = d.task_id;
+            document.getElementById('w2p-info').classList.remove('hidden');
+            document.getElementById('w2p-fname').textContent = d.filename;
+            document.getElementById('w2p-size').textContent = d.size_str;
+            document.getElementById('w2p-btns').classList.remove('hidden');
+            document.getElementById('w2p-result').classList.add('hidden');
+            hideMsg('w2p-msg');
+        }).catch(err => showMsg('w2p-msg', '上传失败: ' + err.message, 'error'));
+    });
+
+    document.getElementById('w2p-convert-btn').addEventListener('click', async () => {
+        if (!taskId) return;
+        const btn = document.getElementById('w2p-convert-btn');
+        btn.disabled = true; btn.textContent = '转换中...';
+        showMsg('w2p-msg', '正在调用本机 Word 进行转换，首次约需 5-15 秒，请稍候...', 'info');
+        try {
+            const resp = await fetch('/word2pdf/convert', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({task_id: taskId})
             });
-        });
+            const data = await resp.json();
+            if (data.status !== 'ok') { showMsg('w2p-msg', data.message, 'error'); return; }
+            showMsg('w2p-msg', data.message, 'success');
+            document.getElementById('w2p-result-size').textContent = data.file_size_str;
+            document.getElementById('w2p-result').classList.remove('hidden');
+            document.getElementById('w2p-dl-btn').href = '/word2pdf/download?task_id=' + taskId;
+        } catch(err) {
+            showMsg('w2p-msg', '转换失败: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = '开始转换';
+        }
+    });
+})();
 
-        // Sensitivity slider
-        document.getElementById('sensitivity').addEventListener('input', (e) => {
-            document.getElementById('sensitivity-value').textContent = e.target.value;
-        });
+// ================================================================
+// TAB 3: PDF TO WORD
+// ================================================================
+(function() {
+    let taskId = null;
 
-        // File input
-        document.getElementById('file-input').addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                document.getElementById('filename').textContent = e.target.files[0].name;
-                fileSelected = true;
-                document.getElementById('process-btn').disabled = false;
+    document.getElementById('p2w-range-mode').addEventListener('change', function() {
+        document.getElementById('p2w-range-input').style.display = this.value === 'custom' ? 'block' : 'none';
+    });
+
+    setupDragDrop('p2w-upload', 'p2w-file', files => {
+        const f = files[0];
+        if (!f.name.toLowerCase().endsWith('.pdf')) {
+            showMsg('p2w-msg', '请上传PDF文件', 'error'); return;
+        }
+        document.getElementById('p2w-filename').textContent = f.name;
+        showMsg('p2w-msg', '正在上传并解析PDF...', 'info');
+        const fd = new FormData(); fd.append('file', f);
+        fetch('/pdf2word/upload', { method: 'POST', body: fd }).then(r => r.json()).then(d => {
+            if (d.status !== 'ok') { showMsg('p2w-msg', d.message, 'error'); return; }
+            taskId = d.task_id;
+            document.getElementById('p2w-info').classList.remove('hidden');
+            document.getElementById('p2w-pages').textContent = d.page_count;
+            document.getElementById('p2w-fname').textContent = d.filename;
+            document.getElementById('p2w-options').classList.remove('hidden');
+            document.getElementById('p2w-btns').classList.remove('hidden');
+            document.getElementById('p2w-result').classList.add('hidden');
+            hideMsg('p2w-msg');
+        }).catch(err => showMsg('p2w-msg', '上传失败: ' + err.message, 'error'));
+    });
+
+    document.getElementById('p2w-convert-btn').addEventListener('click', async () => {
+        if (!taskId) return;
+        const btn = document.getElementById('p2w-convert-btn');
+        btn.disabled = true; btn.textContent = '转换中...';
+        showMsg('p2w-msg', '正在转换为Word，页数越多耗时越长，请稍候...', 'info');
+        try {
+            const rangeMode = document.getElementById('p2w-range-mode').value;
+            const rangeStr = rangeMode === 'custom' ? document.getElementById('p2w-range-input').value.trim() : 'all';
+            const resp = await fetch('/pdf2word/convert', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({task_id: taskId, page_range: rangeStr})
+            });
+            const data = await resp.json();
+            if (data.status !== 'ok') { showMsg('p2w-msg', data.message, 'error'); return; }
+            showMsg('p2w-msg', data.message, 'success');
+            document.getElementById('p2w-result-size').textContent = data.file_size_str;
+            document.getElementById('p2w-result').classList.remove('hidden');
+            document.getElementById('p2w-dl-btn').href = '/pdf2word/download?task_id=' + taskId;
+        } catch(err) {
+            showMsg('p2w-msg', '转换失败: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = '开始转换';
+        }
+    });
+})();
+
+// ================================================================
+// TAB 4: PDF TO IMAGE
+// ================================================================
+(function() {
+    let taskId = null;
+    let totalPages = 0;
+
+    document.getElementById('p2i-format').addEventListener('change', function() {
+        const qGroup = document.getElementById('p2i-quality-group');
+        qGroup.classList.toggle('hidden', this.value !== 'jpeg' && this.value !== 'webp');
+    });
+    document.getElementById('p2i-quality').addEventListener('input', e => {
+        document.getElementById('p2i-qval').textContent = e.target.value;
+    });
+    document.getElementById('p2i-range-mode').addEventListener('change', function() {
+        const inp = document.getElementById('p2i-range-input');
+        inp.style.display = this.value === 'custom' ? 'block' : 'none';
+    });
+
+    setupDragDrop('p2i-upload', 'p2i-file', files => {
+        const f = files[0];
+        if (!f.name.toLowerCase().endsWith('.pdf')) {
+            showMsg('p2i-msg', '请上传PDF文件', 'error'); return;
+        }
+        document.getElementById('p2i-filename').textContent = f.name;
+        const btn = document.getElementById('p2i-convert-btn');
+        btn.disabled = true; btn.textContent = '上传中...';
+        showMsg('p2i-msg', '正在上传...', 'info');
+        const fd = new FormData(); fd.append('file', f);
+        fetch('/pdf2img/upload', { method: 'POST', body: fd }).then(r => r.json()).then(d => {
+            if (d.status !== 'ok') { showMsg('p2i-msg', d.message, 'error'); return; }
+            taskId = d.task_id; totalPages = d.page_count;
+            document.getElementById('p2i-info').classList.remove('hidden');
+            document.getElementById('p2i-pages').textContent = d.page_count;
+            document.getElementById('p2i-fname').textContent = d.filename;
+            document.getElementById('p2i-options').classList.remove('hidden');
+            document.getElementById('p2i-btns').classList.remove('hidden');
+            document.getElementById('p2i-result-card').classList.add('hidden');
+            btn.disabled = false; btn.textContent = '开始转换';
+            hideMsg('p2i-msg');
+        }).catch(err => showMsg('p2i-msg', '上传失败: ' + err.message, 'error'));
+    });
+
+    document.getElementById('p2i-convert-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('p2i-convert-btn');
+        btn.disabled = true; btn.textContent = '转换中...';
+        showMsg('p2i-msg', '正在转换，请稍候...', 'info');
+        try {
+            const fmt = document.getElementById('p2i-format').value;
+            const dpi = parseInt(document.getElementById('p2i-dpi').value);
+            const quality = parseInt(document.getElementById('p2i-quality').value);
+            const rangeMode = document.getElementById('p2i-range-mode').value;
+            const rangeStr = rangeMode === 'custom' ? document.getElementById('p2i-range-input').value.trim() : 'all';
+
+            const resp = await fetch('/pdf2img/convert', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({task_id: taskId, format: fmt, dpi: dpi, quality: quality, page_range: rangeStr})
+            });
+            const data = await resp.json();
+            if (data.status !== 'ok') { showMsg('p2i-msg', data.message, 'error'); btn.disabled = false; btn.textContent = '开始转换'; return; }
+
+            showMsg('p2i-msg', data.message, 'success');
+            document.getElementById('p2i-result-count').textContent = data.total_pages;
+            const thumbsDiv = document.getElementById('p2i-thumbs');
+            thumbsDiv.innerHTML = '';
+            data.preview_files.forEach(tn => {
+                const div = document.createElement('div');
+                div.className = 'preview-thumb';
+                div.innerHTML = `<img src="/pdf2img/thumb/${taskId}/${tn}" alt="preview">`;
+                thumbsDiv.appendChild(div);
+            });
+            document.getElementById('p2i-result-card').classList.remove('hidden');
+            document.getElementById('p2i-file-list').classList.add('hidden');
+
+            document.getElementById('p2i-zip-btn').onclick = () => {
+                window.location.href = '/pdf2img/download_zip?task_id=' + taskId;
+            };
+            document.getElementById('p2i-list-btn').onclick = async () => {
+                const lr = await fetch('/pdf2img/file_list?task_id=' + taskId);
+                const ld = await lr.json();
+                const listDiv = document.getElementById('p2i-file-list');
+                listDiv.innerHTML = '';
+                ld.files.forEach(fname => {
+                    const a = document.createElement('a');
+                    a.href = `/pdf2img/download_page?task_id=${taskId}&file=${encodeURIComponent(fname)}`;
+                    a.textContent = fname;
+                    a.style.display = 'block'; a.style.padding = '6px 0'; a.style.color = '#4a90d9'; a.style.fontSize = '13px';
+                    listDiv.appendChild(a);
+                });
+                listDiv.classList.remove('hidden');
+            };
+        } catch(err) {
+            showMsg('p2i-msg', '转换失败: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = '开始转换';
+        }
+    });
+})();
+
+// ================================================================
+// TAB 5: IMAGE TO PDF
+// ================================================================
+(function() {
+    let taskId = null;
+    let i2pFiles = [];
+    let currentOrder = [];
+
+    document.querySelectorAll('#i2p-layout .radio-item').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('#i2p-layout .radio-item').forEach(i => {
+                i.classList.remove('active');
+                i.querySelector('input').checked = false;
+            });
+            item.classList.add('active');
+            item.querySelector('input').checked = true;
+        });
+    });
+
+    function renderFileList() {
+        const listDiv = document.getElementById('i2p-file-list');
+        listDiv.innerHTML = '';
+        currentOrder.forEach(savedName => {
+            const fi = i2pFiles.find(f => f.saved_name === savedName);
+            if (!fi) return;
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.draggable = true;
+            div.dataset.savedName = savedName;
+            div.innerHTML = `
+                <span class="drag-handle">⠿</span>
+                <img class="file-thumb" src="/img2pdf/thumb/${taskId}/${encodeURIComponent(savedName)}">
+                <div class="file-info">
+                    <div class="file-name">${fi.name}</div>
+                    <div class="file-meta">${fi.width}×${fi.height} · ${formatSize(fi.size)}</div>
+                </div>
+                <button class="file-remove" data-name="${savedName}">×</button>
+            `;
+            div.querySelector('.file-remove').addEventListener('click', e => {
+                e.stopPropagation();
+                const n = e.currentTarget.dataset.name;
+                currentOrder = currentOrder.filter(x => x !== n);
+                i2pFiles = i2pFiles.filter(f => f.saved_name !== n);
+                renderFileList();
+                updateButtons();
+            });
+            listDiv.appendChild(div);
+        });
+    }
+
+    function updateButtons() {
+        const has = currentOrder.length > 0;
+        document.getElementById('i2p-options').classList.toggle('hidden', !has);
+        document.getElementById('i2p-btns').classList.toggle('hidden', !has);
+        document.getElementById('i2p-filename').textContent = has ? `已选择 ${currentOrder.length} 张图片` : '';
+    }
+
+    async function sendOrder() {
+        if (!taskId) return;
+        await fetch('/img2pdf/reorder', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({task_id: taskId, order: currentOrder})
+        });
+    }
+
+    setupDragDrop('i2p-upload', 'i2p-files', async files => {
+        const validExts = ['.png','.jpg','.jpeg','.webp','.bmp'];
+        const validFiles = [...files].filter(f => {
+            const ext = '.' + f.name.split('.').pop().toLowerCase();
+            return validExts.includes(ext);
+        });
+        if (validFiles.length === 0) { showMsg('i2p-msg', '请上传PNG/JPG/WebP/BMP格式的图片', 'error'); return; }
+        showMsg('i2p-msg', '正在上传图片...', 'info');
+        const fd = new FormData();
+        validFiles.forEach(f => fd.append('files', f));
+        try {
+            const resp = await fetch('/img2pdf/upload', { method: 'POST', body: fd });
+            const data = await resp.json();
+            if (data.status !== 'ok') { showMsg('i2p-msg', data.message, 'error'); return; }
+            taskId = data.task_id;
+            i2pFiles = data.files;
+            currentOrder = data.files.map(f => f.saved_name);
+            renderFileList();
+            makeSortable(document.getElementById('i2p-file-list'), newOrder => {
+                currentOrder = newOrder;
+                sendOrder();
+            });
+            updateButtons();
+            hideMsg('i2p-msg');
+            document.getElementById('i2p-download').style.display = 'none';
+        } catch(err) {
+            showMsg('i2p-msg', '上传失败: ' + err.message, 'error');
+        }
+    });
+
+    document.getElementById('i2p-convert-btn').addEventListener('click', async () => {
+        if (!taskId || currentOrder.length === 0) return;
+        const btn = document.getElementById('i2p-convert-btn');
+        btn.disabled = true; btn.textContent = '生成中...';
+        showMsg('i2p-msg', '正在生成PDF，请稍候...', 'info');
+        try {
+            await sendOrder();
+            const layout = document.querySelector('#i2p-layout .radio-item.active').dataset.layout;
+            const autoRotate = document.getElementById('i2p-autorotate').checked;
+            const resp = await fetch('/img2pdf/convert', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({task_id: taskId, layout: layout, auto_rotate: autoRotate})
+            });
+            const data = await resp.json();
+            if (data.status !== 'ok') { showMsg('i2p-msg', data.message, 'error'); return; }
+            showMsg('i2p-msg', data.message, 'success');
+            document.getElementById('i2p-download').style.display = 'block';
+            document.getElementById('i2p-dl-btn').href = '/img2pdf/download?task_id=' + taskId;
+        } catch(err) {
+            showMsg('i2p-msg', '生成失败: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = '生成 PDF';
+        }
+    });
+})();
+
+// ================================================================
+// TAB 6: PDF MERGE
+// ================================================================
+(function() {
+    let taskId = null;
+    let mergeFiles = [];
+    let mergeOrder = [];
+
+    function renderMergeList() {
+        const listDiv = document.getElementById('mrg-file-list');
+        listDiv.innerHTML = '';
+        mergeOrder.forEach(savedName => {
+            const fi = mergeFiles.find(f => f.saved_name === savedName);
+            if (!fi) return;
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.draggable = true;
+            div.dataset.savedName = savedName;
+            div.innerHTML = `
+                <span class="drag-handle">⠿</span>
+                <span class="file-icon">📄</span>
+                <div class="file-info">
+                    <div class="file-name">${fi.name}</div>
+                    <div class="file-meta">${fi.page_count} 页 · ${fi.size_str}</div>
+                </div>
+                <input class="page-range-input" type="text" placeholder="全部"
+                       value="${fi.page_range === 'all' ? '' : fi.page_range}"
+                       data-saved="${savedName}" title="页码范围，如 1-3,5">
+                <button class="file-remove" data-name="${savedName}">×</button>
+            `;
+            const rangeInput = div.querySelector('.page-range-input');
+            rangeInput.addEventListener('change', () => {
+                const val = rangeInput.value.trim() || 'all';
+                fi.page_range = val;
+                updateEstimate();
+                sendMergeState();
+            });
+            div.querySelector('.file-remove').addEventListener('click', e => {
+                e.stopPropagation();
+                const n = e.currentTarget.dataset.name;
+                mergeOrder = mergeOrder.filter(x => x !== n);
+                mergeFiles = mergeFiles.filter(f => f.saved_name !== n);
+                renderMergeList();
+                updateButtons();
+            });
+            listDiv.appendChild(div);
+        });
+    }
+
+    function updateButtons() {
+        const has = mergeOrder.length > 0;
+        document.getElementById('mrg-btns').classList.toggle('hidden', !has);
+        document.getElementById('mrg-filename').textContent = has ? `已选择 ${mergeOrder.length} 个PDF文件` : '';
+        if (has) updateEstimate();
+    }
+
+    function updateEstimate() {
+        let total = 0;
+        mergeOrder.forEach(name => {
+            const fi = mergeFiles.find(f => f.saved_name === name);
+            if (!fi) return;
+            const pr = fi.page_range;
+            if (pr === 'all' || pr === '') {
+                total += fi.page_count;
+            } else {
+                const parts = pr.split(/[,，\s]+/).filter(Boolean);
+                parts.forEach(p => {
+                    if (p.includes('-')) {
+                        const [s,e] = p.split('-').map(Number);
+                        total += (e - s + 1);
+                    } else {
+                        total += 1;
+                    }
+                });
             }
         });
+        document.getElementById('mrg-estimate').classList.remove('hidden');
+        document.getElementById('mrg-est-pages').textContent = total;
+    }
 
-        // Drag and drop
-        const uploadArea = document.getElementById('upload-area');
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
+    async function sendMergeState() {
+        if (!taskId) return;
+        const ranges = {};
+        mergeFiles.forEach(fi => { ranges[fi.saved_name] = fi.page_range; });
+        await fetch('/pdfmerge/reorder', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({task_id: taskId, order: mergeOrder, ranges: ranges})
         });
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
+    }
+
+    setupDragDrop('mrg-upload', 'mrg-files', async files => {
+        const validFiles = [...files].filter(f => f.name.toLowerCase().endsWith('.pdf'));
+        if (validFiles.length === 0) { showMsg('mrg-msg', '请上传PDF文件', 'error'); return; }
+        showMsg('mrg-msg', '正在上传...', 'info');
+        const fd = new FormData();
+        validFiles.forEach(f => fd.append('files', f));
+        try {
+            const resp = await fetch('/pdfmerge/upload', { method: 'POST', body: fd });
+            const data = await resp.json();
+            if (data.status !== 'ok') { showMsg('mrg-msg', data.message, 'error'); return; }
+            taskId = data.task_id;
+            mergeFiles = data.files;
+            mergeOrder = data.files.map(f => f.saved_name);
+            renderMergeList();
+            makeSortable(document.getElementById('mrg-file-list'), newOrder => {
+                mergeOrder = newOrder;
+                updateEstimate();
+                sendMergeState();
+            });
+            updateButtons();
+            hideMsg('mrg-msg');
+            document.getElementById('mrg-result').classList.add('hidden');
+        } catch(err) {
+            showMsg('mrg-msg', '上传失败: ' + err.message, 'error');
+        }
+    });
+
+    document.getElementById('mrg-merge-btn').addEventListener('click', async () => {
+        if (!taskId) return;
+        const btn = document.getElementById('mrg-merge-btn');
+        btn.disabled = true; btn.textContent = '合并中...';
+        showMsg('mrg-msg', '正在合并PDF，请稍候...', 'info');
+        try {
+            await sendMergeState();
+            const resp = await fetch('/pdfmerge/merge', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({task_id: taskId})
+            });
+            const data = await resp.json();
+            if (data.status !== 'ok') { showMsg('mrg-msg', data.message, 'error'); return; }
+            showMsg('mrg-msg', data.message, 'success');
+            document.getElementById('mrg-result').classList.remove('hidden');
+            document.getElementById('mrg-result-pages').textContent = data.page_count;
+            document.getElementById('mrg-result-size').textContent = data.file_size_str;
+            document.getElementById('mrg-dl-btn').href = '/pdfmerge/download?task_id=' + taskId;
+        } catch(err) {
+            showMsg('mrg-msg', '合并失败: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = '合并 PDF';
+        }
+    });
+})();
+
+// ================================================================
+// TAB 7: PDF SPLIT
+// ================================================================
+(function() {
+    let taskId = null;
+    let splPages = 0;
+    let splSelected = new Set();
+    let splMode = 'every_n';
+    let thumbsLoaded = false;
+
+    document.querySelectorAll('#spl-subtabs .sub-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('#spl-subtabs .sub-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.sub-panel').forEach(p => p.classList.add('hidden'));
+            tab.classList.add('active');
+            splMode = tab.dataset.mode;
+            document.getElementById('spl-panel-' + splMode).classList.remove('hidden');
+            if (splMode === 'selected' && !thumbsLoaded) loadSplitThumbs();
         });
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            if (e.dataTransfer.files.length > 0) {
-                const file = e.dataTransfer.files[0];
-                if (file.type === 'application/pdf') {
-                    const input = document.getElementById('file-input');
-                    const dt = new DataTransfer();
-                    dt.items.add(file);
-                    input.files = dt.files;
-                    document.getElementById('filename').textContent = file.name;
-                    fileSelected = true;
-                    document.getElementById('process-btn').disabled = false;
-                }
-            }
-        });
+    });
 
-        // Process button
-        document.getElementById('process-btn').addEventListener('click', async () => {
-            if (!fileSelected) return;
-
-            const btn = document.getElementById('process-btn');
-            const msg = document.getElementById('message');
-            btn.disabled = true;
-            btn.textContent = '上传中...';
-            msg.className = 'show info';
-            msg.textContent = '正在上传文件...';
-
-            try {
-                const formData = new FormData();
-                formData.append('file', document.getElementById('file-input').files[0]);
-                const uploadResp = await fetch('/upload', { method: 'POST', body: formData });
-                const uploadData = await uploadResp.json();
-                if (uploadData.status !== 'ok') {
-                    throw new Error(uploadData.message || '上传失败');
-                }
-                taskId = uploadData.task_id;
-
-                btn.textContent = '处理中...';
-                msg.textContent = '正在去除水印，请稍候...';
-
-                const sensitivity = document.getElementById('sensitivity').value;
-                const resp = await fetch(`/remove_watermark?sensitivity=${sensitivity}&mode=${selectedMode}&task_id=${taskId}`);
-                const data = await resp.json();
-
-                if (data.status === 'ok') {
-                    msg.className = 'show success';
-                    msg.textContent = '水印去除成功！点击下方按钮下载。';
-                    document.getElementById('download-link').classList.add('show');
-                    document.getElementById('download-btn').onclick = () => {
-                        window.location.href = '/download?task_id=' + taskId;
-                    };
+    async function loadSplitThumbs() {
+        const grid = document.getElementById('spl-page-grid');
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px; color:#999;">加载缩略图中...</div>';
+        const frag = document.createDocumentFragment();
+        for (let i = 1; i <= splPages; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'page-cell';
+            cell.dataset.page = i;
+            cell.innerHTML = `
+                <img src="/pdfsplit/thumb/${taskId}/${i}" loading="lazy" alt="p${i}">
+                <div class="pnum">第 ${i} 页</div>
+            `;
+            cell.addEventListener('click', () => {
+                if (splSelected.has(i)) {
+                    splSelected.delete(i); cell.classList.remove('selected');
                 } else {
-                    msg.className = 'show error';
-                    msg.textContent = data.message || '处理失败，请重试';
+                    splSelected.add(i); cell.classList.add('selected');
                 }
-            } catch (error) {
-                msg.className = 'show error';
-                msg.textContent = '处理出错: ' + error.message;
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '开始处理';
+                document.getElementById('spl-selected-count').innerHTML = '已选中: <strong>' + splSelected.size + '</strong> 页';
+            });
+            frag.appendChild(cell);
+        }
+        grid.innerHTML = '';
+        grid.appendChild(frag);
+        thumbsLoaded = true;
+    }
+
+    setupDragDrop('spl-upload', 'spl-file', files => {
+        const f = files[0];
+        if (!f.name.toLowerCase().endsWith('.pdf')) { showMsg('spl-msg', '请上传PDF文件', 'error'); return; }
+        document.getElementById('spl-filename').textContent = f.name;
+        showMsg('spl-msg', '正在上传并解析PDF...', 'info');
+        splSelected = new Set(); thumbsLoaded = false;
+        const fd = new FormData(); fd.append('file', f);
+        fetch('/pdfsplit/upload', { method: 'POST', body: fd }).then(r => r.json()).then(d => {
+            if (d.status !== 'ok') { showMsg('spl-msg', d.message, 'error'); return; }
+            taskId = d.task_id; splPages = d.page_count;
+            document.getElementById('spl-info').classList.remove('hidden');
+            document.getElementById('spl-pages').textContent = d.page_count;
+            document.getElementById('spl-size').textContent = d.file_size_str;
+            document.getElementById('spl-options').classList.remove('hidden');
+            document.getElementById('spl-btns').classList.remove('hidden');
+            document.getElementById('spl-result-card').classList.add('hidden');
+            document.getElementById('spl-page-grid').innerHTML = '';
+            document.getElementById('spl-n').value = Math.max(1, Math.floor(d.page_count / 3)) || 1;
+            hideMsg('spl-msg');
+        }).catch(err => showMsg('spl-msg', '上传失败: ' + err.message, 'error'));
+    });
+
+    document.getElementById('spl-split-btn').addEventListener('click', async () => {
+        if (!taskId) return;
+        const btn = document.getElementById('spl-split-btn');
+        btn.disabled = true; btn.textContent = '拆分中...';
+        showMsg('spl-msg', '正在拆分...', 'info');
+        try {
+            let body = { task_id: taskId, mode: splMode };
+            if (splMode === 'every_n') {
+                body.n = parseInt(document.getElementById('spl-n').value) || 1;
+            } else if (splMode === 'ranges') {
+                body.ranges = document.getElementById('spl-ranges-input').value.trim();
+                if (!body.ranges) { showMsg('spl-msg', '请输入页码范围', 'error'); btn.disabled = false; btn.textContent = '开始拆分'; return; }
+            } else if (splMode === 'selected') {
+                if (splSelected.size === 0) { showMsg('spl-msg', '请至少选择一个页面', 'error'); btn.disabled = false; btn.textContent = '开始拆分'; return; }
+                body.pages = [...splSelected].sort((a,b)=>a-b).join(',');
             }
+            const resp = await fetch('/pdfsplit/split', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            });
+            const data = await resp.json();
+            if (data.status !== 'ok') { showMsg('spl-msg', data.message, 'error'); return; }
+            showMsg('spl-msg', data.message, 'success');
+            const listDiv = document.getElementById('spl-result-list');
+            listDiv.innerHTML = '';
+            data.files.forEach(fi => {
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.innerHTML = `
+                    <span>📄</span>
+                    <div class="rname">${fi.filename}<br><span class="rmeta">${fi.pages} 页 (${fi.page_range})</span></div>
+                    <a href="/pdfsplit/download_part?task_id=${taskId}&file=${encodeURIComponent(fi.filename)}">
+                        <button class="btn-primary btn-sm">下载</button>
+                    </a>
+                `;
+                listDiv.appendChild(div);
+            });
+            document.getElementById('spl-result-card').classList.remove('hidden');
+            document.getElementById('spl-zip-btn').onclick = () => {
+                window.location.href = '/pdfsplit/download_zip?task_id=' + taskId;
+            };
+        } catch(err) {
+            showMsg('spl-msg', '拆分失败: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = '开始拆分';
+        }
+    });
+})();
+
+// ================================================================
+// TAB 8: PDF COMPRESS
+// ================================================================
+(function() {
+    let taskId = null;
+
+    document.querySelectorAll('#cmp-levels .radio-item').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('#cmp-levels .radio-item').forEach(i => {
+                i.classList.remove('active');
+                i.querySelector('input').checked = false;
+            });
+            item.classList.add('active');
+            item.querySelector('input').checked = true;
         });
-    </script>
+    });
+
+    setupDragDrop('cmp-upload', 'cmp-file', files => {
+        const f = files[0];
+        if (!f.name.toLowerCase().endsWith('.pdf')) { showMsg('cmp-msg', '请上传PDF文件', 'error'); return; }
+        document.getElementById('cmp-filename').textContent = f.name;
+        showMsg('cmp-msg', '正在上传...', 'info');
+        const fd = new FormData(); fd.append('file', f);
+        fetch('/pdfcompress/upload', { method: 'POST', body: fd }).then(r => r.json()).then(d => {
+            if (d.status !== 'ok') { showMsg('cmp-msg', d.message, 'error'); return; }
+            taskId = d.task_id;
+            document.getElementById('cmp-info').classList.remove('hidden');
+            document.getElementById('cmp-pages').textContent = d.page_count;
+            document.getElementById('cmp-size').textContent = d.file_size_str;
+            document.getElementById('cmp-options').classList.remove('hidden');
+            document.getElementById('cmp-btns').classList.remove('hidden');
+            document.getElementById('cmp-result').classList.add('hidden');
+            hideMsg('cmp-msg');
+        }).catch(err => showMsg('cmp-msg', '上传失败: ' + err.message, 'error'));
+    });
+
+    document.getElementById('cmp-compress-btn').addEventListener('click', async () => {
+        if (!taskId) return;
+        const btn = document.getElementById('cmp-compress-btn');
+        btn.disabled = true; btn.textContent = '压缩中...';
+        showMsg('cmp-msg', '正在压缩，请稍候...', 'info');
+        try {
+            const level = document.querySelector('#cmp-levels .radio-item.active').dataset.level;
+            const resp = await fetch('/pdfcompress/compress', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({task_id: taskId, level: level})
+            });
+            const data = await resp.json();
+            if (data.status !== 'ok') { showMsg('cmp-msg', data.message, 'error'); return; }
+            showMsg('cmp-msg', data.message, 'success');
+            document.getElementById('cmp-result').classList.remove('hidden');
+            document.getElementById('cmp-before-size').textContent = data.original_size_str;
+            document.getElementById('cmp-after-size').textContent = data.compressed_size_str;
+            const ratioEl = document.getElementById('cmp-ratio');
+            if (data.no_gain) {
+                ratioEl.className = 'ratio-badge no-gain';
+                ratioEl.textContent = '该文件已无压缩空间';
+            } else {
+                ratioEl.className = 'ratio-badge';
+                ratioEl.textContent = `减小了 ${data.ratio}%（${formatSize(data.original_size - data.compressed_size)}）`;
+            }
+            document.getElementById('cmp-dl-btn').href = '/pdfcompress/download?task_id=' + taskId;
+        } catch(err) {
+            showMsg('cmp-msg', '压缩失败: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false; btn.textContent = '开始压缩';
+        }
+    });
+})();
+</script>
 </body>
 </html>

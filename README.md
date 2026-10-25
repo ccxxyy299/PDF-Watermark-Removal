@@ -1,12 +1,27 @@
-# PDF-Watermark-Removal
+# PDF 工具箱
 
-PDF 去水印工具，支持多种类型水印去除，通过 Web 界面操作。
+一站式 PDF 在线处理工具，通过 Web 界面操作，支持 8 大功能。
+
+## 功能一览
+
+| 功能 | 说明 |
+|------|------|
+| PDF 去水印 | 自动/灰色/彩色/深色 4 种模式，可调灵敏度 |
+| Word 转 PDF | 基于本机 Microsoft Word 渲染，完整保留排版（需安装 MS Word） |
+| PDF 转 Word | 文字、段落、表格转为可编辑的 .docx，支持页码范围 |
+| PDF 转图片 | PNG/JPEG/WebP，72-600 DPI，支持页码范围，单张或 ZIP 打包下载 |
+| 图片转 PDF | 多图合并，拖拽排序，原图/A4 横竖版布局，自动旋转 |
+| PDF 合并 | 多文件拖拽排序，可为每个文件单独指定页码范围 |
+| PDF 拆分 | 每 N 页 / 页码范围 / 缩略图点选三种方式 |
+| PDF 压缩 | 轻度/标准/强力三档，展示压缩前后体积对比 |
 
 ## 安装依赖
 
 ```bash
-pip install flask opencv-python numpy pymupdf Pillow
+pip install flask opencv-python numpy pymupdf Pillow python-docx pdf2docx docx2pdf
 ```
+
+> Word 转 PDF 功能依赖本机安装的 Microsoft Word（通过 COM 调用），无需额外配置。
 
 ## 运行
 
@@ -14,16 +29,7 @@ pip install flask opencv-python numpy pymupdf Pillow
 python app.py
 ```
 
-浏览器打开 `http://127.0.0.1:5000`，上传 PDF 文件，选择水印类型和灵敏度后点击处理，下载处理后的文件。
-
-## 支持的水印类型
-
-| 模式 | 说明 | 适用场景 |
-|------|------|----------|
-| 自动检测 | 综合策略，自适应识别水印 | 通用场景（推荐） |
-| 灰色水印 | 半透明/浅灰水印 | "CONFIDENTIAL"等灰色水印 |
-| 彩色水印 | 有颜色的水印 | 红色/蓝色等彩色水印 |
-| 深色水印 | 深色背景水印 | "DRAFT"等深色水印 |
+浏览器打开 `http://127.0.0.1:5000`，顶部导航切换功能标签，上传文件后按提示操作。
 
 ## 去水印原理
 
@@ -43,8 +49,7 @@ python app.py
 
 ## 注意事项
 
-- 支持灰色、彩色、深色等多种水印类型
-- 处理时间约 0.5-1 秒/页
-- 灰色内容（如灰色背景）在高灵敏度下可能被误伤
-- PDF转图片再转回会有轻微质量损失
-
+- 所有功能通过任务 ID 隔离，支持多用户并发，超过 1 小时的任务自动清理
+- Word 转 PDF 首次转换需启动 Word 进程，约 5-15 秒
+- PDF 转 Word 对扫描件（图片型PDF）无效，转换结果为页面图片
+- 去水印处理时间约 0.5-1 秒/页，转图片再转回会有轻微质量损失

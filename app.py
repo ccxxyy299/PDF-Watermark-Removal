@@ -8,12 +8,28 @@ import cv2
 import numpy as np
 import fitz
 from PIL import Image
-
-TASK_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tasks')
+from utils import TASK_DIR
 
 CONVERT_DPI = 300
 
 app = Flask(__name__)
+
+# Register feature blueprints
+from routes.pdf2img import pdf2img_bp
+from routes.img2pdf import img2pdf_bp
+from routes.pdfmerge import pdfmerge_bp
+from routes.pdfsplit import pdfsplit_bp
+from routes.pdfcompress import pdfcompress_bp
+from routes.word2pdf import word2pdf_bp
+from routes.pdf2word import pdf2word_bp
+
+app.register_blueprint(pdf2img_bp)
+app.register_blueprint(img2pdf_bp)
+app.register_blueprint(pdfmerge_bp)
+app.register_blueprint(pdfsplit_bp)
+app.register_blueprint(pdfcompress_bp)
+app.register_blueprint(word2pdf_bp)
+app.register_blueprint(pdf2word_bp)
 
 
 def remove_watermark_gray(image, sensitivity=50):
